@@ -65,9 +65,13 @@ button { cursor: pointer; }
 .chev.up { transform: rotate(180deg); }
 .wk-detail { padding: 0 0 10px; }
 .wk-line { display: flex; justify-content: space-between; align-items: center; padding: 6px 24px 6px 12px; background: var(--ground); }
-.notice { display: flex; flex-direction: column; gap: 3px; padding: 14px 0; border-top: 1px solid var(--line); }
+.notice { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 0; border: 0; border-top: 1px solid var(--line); background: none; color: var(--ink); text-align: left; }
+.notice-text { display: flex; flex-direction: column; gap: 3px; }
 .notice b { font-size: 15px; font-weight: 500; }
-.notice span { font-size: 13px; color: var(--sub); }
+.notice-text span { font-size: 13px; color: var(--sub); }
+.back { display: flex; align-items: center; gap: 2px; margin-left: -8px; padding: 8px; border: 0; background: none; color: var(--ink); font-size: 17px; font-weight: 700; }
+.back svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.notice-body { margin: 0; padding-top: 16px; border-top: 1px solid var(--line); font-size: 15px; line-height: 1.7; white-space: pre-line; }
 
 .tabs { flex: none; display: grid; grid-template-columns: repeat(3, 1fr); background: #fff; border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
 .tabs button { height: 66px; border: 0; border-top: 2px solid transparent; background: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 12px; color: var(--sub); }
@@ -125,9 +129,9 @@ button { cursor: pointer; }
     next: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>'
   };
   var NOTICES = [
-    { title: '[예시] 11월 근무표 안내', date: '11/01', writer: '경영지원' },
-    { title: '[예시] 동절기 출근 시간 변경', date: '10/30', writer: '경영지원' },
-    { title: '[예시] 출퇴근 기록 사용 안내', date: '10/28', writer: '경영지원' }
+    { title: '[예시] 11월 근무표 안내', date: '11/01', writer: '경영지원', body: '11월 근무표를 경영지원팀에서 배부했습니다.\n각 팀장님께 확인 바랍니다.' },
+    { title: '[예시] 동절기 출근 시간 변경', date: '10/30', writer: '경영지원', body: '11월 10일부터 프론트 출근 시간이 07:30으로 바뀝니다.' },
+    { title: '[예시] 출퇴근 기록 사용 안내', date: '10/28', writer: '경영지원', body: '리더스CC 안에서 출근·퇴근 버튼을 눌러 기록합니다.\n위치 권한을 허용해야 기록할 수 있습니다.' }
   ];
 
   function pad(n) { return String(n).padStart(2, '0'); }
@@ -150,17 +154,37 @@ button { cursor: pointer; }
     confirm: false,
     month: 11,
     selDay: 2,
-    // 이번 주 기록에서 펼친 날짜. 예) { 30: true } 면 10/30 의 1차·2차가 보임
-    openDays: {}
+    // 최근 7일 기록에서 펼친 날짜. 예) { '10-30': true } 면 10/30 의 1차·2차가 보임
+    openDays: {},
+    // 보고 있는 공지 번호. null 이면 공지 화면이 아님
+    notice: null,
+    // 공지에서 뒤로 갈 때 돌아갈 홈 스크롤 위치
+    homeScroll: 0
   };
 
   function monthInfo(m) { return m === 10 ? { first: 4, days: 31 } : { first: 0, days: 30 }; }
+  // 예시 기록 (프론트 직원 한 명 기준)
+  // Map<날짜, 근무 구간 목록>:
+  //   key:   10월 며칠인지. 예) 5
+  //   value: [출근, 퇴근] 쌍의 목록. 하루 두 번 근무면 쌍이 둘
+  //          예) [['07:55', '12:02'], ['13:01', '17:10']]
+  // 주말은 06시대 이른 출근, 평일 중 이틀은 휴무(목록에 없음)
+  var OCT = {
+    1: [['07:52', '17:08']], 2: [['07:48', '17:15']], 3: [['06:12', '15:30']], 4: [['06:08', '15:42']],
+    5: [['07:55', '12:02'], ['13:01', '17:10']],
+    8: [['07:50', '17:04']], 9: [['07:46', '17:20']], 10: [['06:10', '15:35']], 11: [['06:05', '16:02']],
+    12: [['07:58', '17:00']], 13: [['07:51', '11:58'], ['14:30', '19:12']],
+    16: [['07:49', '17:11']], 17: [['06:11', '15:28']], 18: [['06:03', '15:51']], 19: [['07:53', '17:06']],
+    20: [['07:47', '17:02']],
+    23: [['07:55', '17:30']], 24: [['06:09', '15:40']], 25: [['06:06', '15:33']], 26: [['07:50', '17:05']],
+    27: [['07:52', '12:00'], ['13:05', '17:18']],
+    29: [['07:44', '17:09']], 30: [['07:51', '12:03'], ['13:10', '17:12']], 31: [['06:07', '15:44']]
+  };
+  var NOV = { 1: [['06:04', '15:37']] };
   function recordsFor(m, day) {
-    var wd = (monthInfo(m).first + day - 1) % 7;
-    if (m === 11) return day === 2 ? S.sessions : [];
-    if (wd === 0 || wd === 6 || day === 9) return [];
-    if (day === 30) return [{ in: '08:55', out: '12:00' }, { in: '13:10', out: '18:12' }];
-    return [{ in: '08:' + pad(44 + (day * 7) % 15), out: '18:' + pad((day * 5) % 21) }];
+    if (m === 11 && day === 2) return S.sessions;
+    var src = (m === 10 ? OCT : NOV)[day] || [];
+    return src.map(function (p) { return { in: p[0], out: p[1] }; });
   }
   function isOpen() { var s = S.sessions; return s.length > 0 && s[s.length - 1].out === null; }
   function span(r) { return r.in + ' – ' + (r.out || '근무 중'); }
@@ -178,14 +202,20 @@ button { cursor: pointer; }
     var rows = s.length ? s.map(function (r, i) {
       return '<div class="row"><span class="k">' + (i + 1) + '차</span><span class="n">' + span(r) + '</span></div>';
     }).join('') : '<div class="row muted">아직 출근 기록이 없습니다.</div>';
-    var week = [30, 29, 28, 27, 26].map(function (d) {
-      var r = recordsFor(10, d);
-      var label = '10/' + d + ' (' + WD[(4 + d - 1) % 7] + ')';
+    // 오늘(11/2)을 뺀 최근 7일, 최신 날짜가 위
+    var week = [[11, 1], [10, 31], [10, 30], [10, 29], [10, 28], [10, 27], [10, 26]].map(function (md) {
+      var m = md[0], d = md[1], key = m + '-' + d;
+      var r = recordsFor(m, d);
+      var label = m + '/' + d + ' (' + WD[(monthInfo(m).first + d - 1) % 7] + ')';
+      if (r.length === 0) {
+        return '<div class="row"><span>' + label + '</span><span class="muted">휴무</span></div>';
+      }
       var whole = r[0].in + ' – ' + r[r.length - 1].out;
       if (r.length < 2) {
         return '<div class="row"><span>' + label + '</span><span class="n wk-time">' + whole + '</span></div>';
       }
-      var opened = !!S.openDays[d];
+      var d = key;
+      var opened = !!S.openDays[key];
       var detail = opened ? '<div class="wk-detail">' + r.map(function (x, i) {
         return '<div class="wk-line"><span class="k">' + (i + 1) + '차</span><span class="n wk-time">' + span(x) + '</span></div>';
       }).join('') + '</div>' : '';
@@ -200,10 +230,11 @@ button { cursor: pointer; }
       '<i style="left:0;right:0;top:52px;height:8px"></i><i style="top:0;bottom:0;left:62%;width:8px"></i><i style="left:0;right:0;top:108px;height:5px"></i>' +
       '<div class="range" style="left:50%"></div><span class="label" style="left:50%">리더스CC</span><div class="me" style="left:52%;top:74px"></div></section>' +
       '<section class="card"><h2>오늘 근무</h2>' + rows + '<button class="primary" data-act="press">' + (open ? '퇴근' : '출근') + '</button></section>' +
-      '<section class="card" style="padding-bottom:6px"><h2>공지사항</h2>' + NOTICES.map(function (n) {
-        return '<div class="notice"><b>' + n.title + '</b><span>' + n.date + ' · ' + n.writer + '</span></div>';
+      '<section class="card" style="padding-bottom:6px"><h2>공지사항</h2>' + NOTICES.map(function (n, i) {
+        return '<button class="notice" data-act="notice" data-idx="' + i + '"><span class="notice-text"><b>' + n.title + '</b><span>' + n.date + ' · ' + n.writer + '</span></span>' +
+          '<svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>';
       }).join('') + '</section>' +
-      '<section class="card" style="padding-bottom:6px"><div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">이번 주 기록</h2><button class="link" data-act="tab" data-tab="records">전체 보기</button></div>' + week + '</section>';
+      '<section class="card" style="padding-bottom:6px"><div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">최근 7일 기록</h2><button class="link" data-act="tab" data-tab="records">전체 보기</button></div>' + week + '</section>';
   }
 
   function viewRecords() {
@@ -239,16 +270,32 @@ button { cursor: pointer; }
       '<div class="btns"><button class="no" data-act="cancel">취소</button><button class="yes" data-act="leave">퇴근</button></div></div></div>';
   }
 
-  function render() {
+  function viewNotice() {
+    var n = NOTICES[S.notice];
+    return '<section class="card" style="gap:6px"><h2 style="margin:0;font-size:18px">' + n.title + '</h2>' +
+      '<span class="muted" style="font-size:13px;margin-bottom:10px">' + n.date + ' · ' + n.writer + '</span>' +
+      '<p class="notice-body">' + n.body + '</p></section>';
+  }
+
+  // keepScroll 이 true 면 다시 그린 뒤에도 보던 스크롤 위치를 그대로 둠
+  // (기록 펼치기·출퇴근처럼 같은 화면 안에서 바뀔 때). 탭·공지 이동은 맨 위부터 보여줌
+  function render(keepScroll) {
     var el = document.getElementById('app');
+    var old = el.querySelector('.scroll');
+    var top = keepScroll && old ? old.scrollTop : 0;
     if (S.login) { el.innerHTML = viewLogin(); return; }
     var titles = { home: '리더스CC', records: '출퇴근 기록', me: '내 정보' };
-    var body = S.tab === 'home' ? viewHome() : S.tab === 'records' ? viewRecords() : viewMe();
+    var inNotice = S.notice !== null;
+    var body = inNotice ? viewNotice() : S.tab === 'home' ? viewHome() : S.tab === 'records' ? viewRecords() : viewMe();
+    var head = inNotice
+      ? '<button class="back" data-act="back" aria-label="뒤로">' + ICON.prev + '<span>공지사항</span></button>'
+      : '<b>' + titles[S.tab] + '</b><span>홍길동 · 프론트</span>';
     var tabs = [['home', '홈'], ['records', '기록'], ['me', '내 정보']].map(function (t) {
       return '<button data-act="tab" data-tab="' + t[0] + '"' + (S.tab === t[0] ? ' aria-current="page"' : '') + '>' + ICON[t[0]] + '<span>' + t[1] + '</span></button>';
     }).join('');
-    el.innerHTML = '<header class="top"><b>' + titles[S.tab] + '</b><span>홍길동 · 프론트</span></header>' +
+    el.innerHTML = '<header class="top">' + head + '</header>' +
       '<main class="scroll">' + body + '</main><nav class="tabs">' + tabs + '</nav>' + (S.confirm ? viewSheet() : '');
+    el.querySelector('.scroll').scrollTop = top;
   }
 
   document.addEventListener('submit', function (e) {
@@ -259,6 +306,17 @@ button { cursor: pointer; }
     if (!t) return;
     if (t.getAttribute('data-act') === 'cancel' && e.target.closest('[data-stop]') && !e.target.closest('.no')) return;
     var act = t.getAttribute('data-act');
+    var keep = true;
+    if (act === 'notice') {
+      var sc = document.querySelector('.scroll');
+      S.homeScroll = sc ? sc.scrollTop : 0;
+      S.notice = Number(t.getAttribute('data-idx'));
+      render(false); return;
+    }
+    if (act === 'back') {
+      S.notice = null; render(false);
+      document.querySelector('.scroll').scrollTop = S.homeScroll; return;
+    }
     if (act === 'press') {
       if (isOpen()) S.confirm = true;
       else S.sessions = S.sessions.concat([{ in: hhmm(), out: null }]);
@@ -267,13 +325,13 @@ button { cursor: pointer; }
       s[s.length - 1] = { in: s[s.length - 1].in, out: hhmm() };
       S.sessions = s; S.confirm = false;
     } else if (act === 'cancel') { S.confirm = false; }
-    else if (act === 'tab') { S.tab = t.getAttribute('data-tab'); }
+    else if (act === 'tab') { S.tab = t.getAttribute('data-tab'); S.notice = null; keep = false; }
     else if (act === 'wk') { var wd = t.getAttribute('data-day'); S.openDays[wd] = !S.openDays[wd]; }
     else if (act === 'day') { S.selDay = Number(t.getAttribute('data-day')); }
     else if (act === 'month') { S.month = Number(t.getAttribute('data-month')); S.selDay = S.month === 10 ? 30 : 2; }
-    else if (act === 'logout') { S.login = true; }
+    else if (act === 'logout') { S.login = true; keep = false; }
     else return;
-    save(); render();
+    save(); render(keep);
   });
   setInterval(function () { var c = document.getElementById('clock'); if (c) c.textContent = hhmm(); }, 15000);
   render();
