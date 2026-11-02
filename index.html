@@ -29,6 +29,9 @@ button { cursor: pointer; }
 .app { position: relative; max-width: 480px; height: 100vh; height: 100dvh; margin: 0 auto; background: var(--ground); display: flex; flex-direction: column; overflow: hidden; }
 .top { flex: none; display: flex; justify-content: space-between; align-items: center; height: 56px; padding: 0 20px; padding-top: env(safe-area-inset-top); background: var(--white); border-bottom: 1px solid var(--line); }
 .top b { font-size: 17px; }
+.erp-brand { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 600; color: #1f2937; }
+.erp-brand .erp { color: #059669; }
+.erp-brand img { display: block; }
 .top span { font-size: 14px; color: var(--sub); }
 .scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; gap: 12px; padding: 16px 16px 24px; }
 .card { background: var(--white); border-radius: 2px; padding: 20px; display: flex; flex-direction: column; }
@@ -284,7 +287,12 @@ button { cursor: pointer; }
     var old = el.querySelector('.scroll');
     var top = keepScroll && old ? old.scrollTop : 0;
     if (S.login) { el.innerHTML = viewLogin(); return; }
-    var titles = { home: '리더스CC', records: '출퇴근 기록', me: '내 정보' };
+    // 홈 제목은 ERP 사이드바 로고와 같은 모양: 초록 "ERP" + "Reconnect" + 마크
+    var titles = {
+      home: '<span class="erp-brand"><span class="erp">ERP</span> Reconnect<img src="logo_bright.png" alt="" width="22" height="22"></span>',
+      records: '출퇴근 기록',
+      me: '내 정보'
+    };
     var inNotice = S.notice !== null;
     var body = inNotice ? viewNotice() : S.tab === 'home' ? viewHome() : S.tab === 'records' ? viewRecords() : viewMe();
     var head = inNotice
