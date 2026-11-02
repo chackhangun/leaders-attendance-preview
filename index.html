@@ -67,6 +67,7 @@ button { cursor: pointer; }
 .chev { width: 18px; height: 18px; fill: none; stroke: var(--sub); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .chev.up { transform: rotate(180deg); }
 .wk-detail { padding: 0 0 10px; }
+.cont { display: block; margin-top: 2px; text-align: right; font-family: 'Noto Sans KR', sans-serif; font-size: 12px; font-weight: 400; color: var(--sub); }
 .wk-line { display: flex; justify-content: space-between; align-items: center; padding: 6px 24px 6px 12px; background: var(--ground); }
 .notice { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 0; border: 0; border-top: 1px solid var(--line); background: none; color: var(--ink); text-align: left; }
 .notice-text { display: flex; flex-direction: column; gap: 3px; }
@@ -173,6 +174,7 @@ button { cursor: pointer; }
   //   key:   10월 며칠인지. 예) 5
   //   value: [출근, 퇴근] 쌍의 목록. 하루 두 번 근무면 쌍이 둘
   //          예) [['07:55', '12:02'], ['13:01', '17:10']]
+  //          세 번째 값이 true 면 자정을 넘겨 다음날 퇴근한 근무. 예) ['22:05', '06:20', true]
   // 주말은 06시대 이른 출근, 평일 중 이틀은 휴무(목록에 없음)
   var OCT = {
     1: [['07:52', '17:08']], 2: [['07:48', '17:15']], 3: [['06:12', '15:30']], 4: [['06:08', '15:42']],
@@ -181,7 +183,8 @@ button { cursor: pointer; }
     12: [['07:58', '17:00']], 13: [['07:51', '11:58'], ['14:30', '19:12']],
     16: [['07:49', '17:11']], 17: [['06:11', '15:28']], 18: [['06:03', '15:51']], 19: [['07:53', '17:06']],
     20: [['07:47', '17:02']],
-    23: [['07:55', '17:30']], 24: [['06:09', '15:40']], 25: [['06:06', '15:33']], 26: [['07:50', '17:05']],
+    22: [['22:05', '06:20', true]],
+    23: [['13:00', '17:30']], 24: [['06:09', '15:40']], 25: [['06:06', '15:33']], 26: [['07:50', '17:05']],
     27: [['07:52', '12:00'], ['13:05', '17:18']],
     29: [['07:44', '17:09']], 30: [['07:51', '12:03'], ['13:10', '17:12']], 31: [['06:07', '15:44']]
   };
@@ -189,7 +192,24 @@ button { cursor: pointer; }
   function recordsFor(m, day) {
     if (m === 11 && day === 2) return S.sessions;
     var src = (m === 10 ? OCT : NOV)[day] || [];
-    return src.map(function (p) { return { in: p[0], out: p[1] }; });
+    return src.map(function (p) { return { in: p[0], out: p[1], next: !!p[2] }; });
+  }
+
+  // 캘린더에서 하루에 보여줄 줄 목록. 자정을 넘긴 근무는 날짜별로 나눠 보여줌
+  //   - 전날 출근해서 이 날 퇴근한 근무: '전날부터 00:00 – 퇴근'. 차수는 붙이지 않음
+  //   - 이 날 출근한 근무: 출근 순서대로 1차, 2차. 자정을 넘기면 '출근 – 24:00'
+  // 예) 10/22 22:05 출근 → 10/23 06:20 퇴근, 10/23 13:00 다시 출근
+  //     10/22: [1차 22:05 – 24:00 (다음날로 이어짐)]
+  //     10/23: [전날부터 00:00 – 06:20], [1차 13:00 – 17:30]
+  function dayLines(m, d) {
+    var prev = d > 1 ? recordsFor(m, d - 1) : (m === 11 ? recordsFor(10, 31) : []);
+    var lines = prev.filter(function (r) { return r.next; }).map(function (r) {
+      return { label: '전날부터', text: '00:00 – ' + r.out, note: '' };
+    });
+    recordsFor(m, d).forEach(function (r, i) {
+      lines.push({ label: (i + 1) + '차', text: r.in + ' – ' + (r.next ? '24:00' : (r.out || '근무 중')), note: r.next ? '다음날로 이어짐' : '' });
+    });
+    return lines;
   }
   function isOpen() { var s = S.sessions; return s.length > 0 && s[s.length - 1].out === null; }
   function span(r) { return r.in + ' – ' + (r.out || '근무 중'); }
@@ -248,12 +268,13 @@ button { cursor: pointer; }
     WD.forEach(function (w) { cells += '<span class="wd">' + w + '</span>'; });
     for (var i = 0; i < info.first; i++) cells += '<span></span>';
     for (var d = 1; d <= info.days; d++) {
-      var has = recordsFor(m, d).length > 0, sel = d === S.selDay;
+      var has = dayLines(m, d).length > 0, sel = d === S.selDay;
       cells += '<button class="day' + (has ? ' has' : '') + (sel ? ' sel' : '') + '" data-act="day" data-day="' + d + '" aria-label="' + m + '월 ' + d + '일' + (has ? ', 기록 있음' : '') + '"><span>' + d + '</span><i></i></button>';
     }
-    var recs = recordsFor(m, S.selDay);
-    var lines = recs.length ? recs.map(function (r, i) {
-      return '<div class="row"><span class="k">' + (i + 1) + '차</span><span class="n">' + span(r) + '</span></div>';
+    var recs = dayLines(m, S.selDay);
+    var lines = recs.length ? recs.map(function (l) {
+      return '<div class="row"><span class="k">' + l.label + '</span><span class="n">' + l.text +
+        (l.note ? '<small class="cont">' + l.note + '</small>' : '') + '</span></div>';
     }).join('') : '<div class="row muted">기록 없음</div>';
     return '<section class="card" style="padding:12px 12px 16px;gap:8px"><div class="cal-head">' +
       '<button data-act="month" data-month="10" aria-label="이전 달"' + (m === 10 ? ' disabled' : '') + '>' + ICON.prev + '</button>' +
