@@ -94,14 +94,16 @@ button { cursor: pointer; }
 .cal .day.sel { background: var(--ink); color: #fff; font-weight: 600; }
 .cal .day.sel.has i { background: #fff; }
 
-.login { flex: 1; background: var(--ink); color: #fff; padding: 120px 24px 40px; padding-bottom: calc(40px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; justify-content: space-between; overflow-y: auto; }
-.login .brand { font-family: var(--num); font-size: 14px; font-weight: 500; letter-spacing: 2px; color: rgba(255,255,255,.72); }
-.login h1 { margin: 10px 0 8px; font-size: 30px; }
-.login p { margin: 0; font-size: 15px; color: rgba(255,255,255,.72); }
-.login form { display: flex; flex-direction: column; gap: 12px; margin-top: 48px; }
-.login label { font-size: 13px; color: rgba(255,255,255,.72); }
-.login input { height: 52px; border: 1px solid rgba(255,255,255,.24); border-radius: 2px; background: rgba(255,255,255,.06); color: #fff; padding: 0 14px; font-size: 16px; }
-.login button { margin-top: 20px; height: 56px; border: 0; border-radius: 2px; background: #fff; color: var(--ink); font-size: 17px; font-weight: 700; }
+.login { position: relative; flex: 1; background: #fff; padding: 0 24px; display: flex; align-items: center; justify-content: center; overflow-y: auto; }
+.login-box { width: 100%; max-width: 350px; display: flex; flex-direction: column; align-items: center; gap: 32px; }
+.login-logo { display: flex; align-items: center; gap: 10px; }
+.login-logo span { font-size: 36px; line-height: 40px; font-weight: 700; color: #212121; }
+.login form { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+.login input { height: 48px; border: 1px solid #d1d5db; border-radius: 2px; background: #fff; color: #212121; padding: 0 14px; font-size: 16px; }
+.login input::placeholder { color: #8a8a8a; }
+.login button { margin-top: 12px; height: 48px; border: 0; border-radius: 2px; background: #059669; color: #fff; font-size: 16px; font-weight: 600; }
+.login .copy { position: absolute; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%); font-size: 13px; color: #8a8a8a; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
 .sheet-bg { position: absolute; inset: 0; background: rgba(34,31,32,.56); display: flex; align-items: flex-end; }
 .sheet { width: 100%; background: #fff; padding: 28px 20px 24px; padding-bottom: calc(24px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 6px; }
@@ -193,10 +195,11 @@ button { cursor: pointer; }
   function span(r) { return r.in + ' – ' + (r.out || '근무 중'); }
 
   function viewLogin() {
-    return '<div class="login"><div><div class="brand">LEADERS CC</div><h1>출퇴근</h1><p>ERP 계정으로 로그인</p></div>' +
-      '<form data-act="login"><label for="uid">아이디</label><input id="uid" autocomplete="username">' +
-      '<label for="upw" style="margin-top:8px">비밀번호</label><input id="upw" type="password" autocomplete="current-password">' +
-      '<button type="submit">로그인</button></form></div>';
+    // ERP 로그인 화면(erp-web-clean login/page.tsx)과 같은 구성: 마크 + RECONNECT, 입력 두 칸, 초록 로그인 버튼
+    return '<div class="login"><div class="login-box"><div class="login-logo"><img src="logo_bright.png" alt="" width="32" height="32"><span>RECONNECT</span></div>' +
+      '<form data-act="login"><label class="sr" for="uid">아이디</label><input id="uid" placeholder="아이디를 입력해주세요" autocomplete="username">' +
+      '<label class="sr" for="upw">비밀번호</label><input id="upw" type="password" placeholder="비밀번호를 입력해주세요" autocomplete="current-password">' +
+      '<button type="submit">로그인</button></form></div><span class="copy">© 2024 Reconnect</span></div>';
   }
 
   function viewHome() {
@@ -287,12 +290,7 @@ button { cursor: pointer; }
     var old = el.querySelector('.scroll');
     var top = keepScroll && old ? old.scrollTop : 0;
     if (S.login) { el.innerHTML = viewLogin(); return; }
-    // 홈 제목은 ERP 사이드바 로고와 같은 모양: 초록 "ERP" + "Reconnect" + 마크
-    var titles = {
-      home: '<span class="erp-brand"><span class="erp">ERP</span> Reconnect<img src="logo_bright.png" alt="" width="22" height="22"></span>',
-      records: '출퇴근 기록',
-      me: '내 정보'
-    };
+    var titles = { home: '리더스CC', records: '출퇴근 기록', me: '내 정보' };
     var inNotice = S.notice !== null;
     var body = inNotice ? viewNotice() : S.tab === 'home' ? viewHome() : S.tab === 'records' ? viewRecords() : viewMe();
     var head = inNotice
