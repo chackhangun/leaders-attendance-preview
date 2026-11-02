@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#221f20">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="출퇴근">
+<title>리더스CC 출퇴근</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Outfit:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #221f20;
+  --sub: #6b6766;
+  --line: #e6e3e1;
+  --ground: #f4f3f1;
+  --white: #ffffff;
+  --red: #f91101;
+  --num: 'Outfit', sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: #e9e7e5; }
+body { font-family: 'Noto Sans KR', sans-serif; color: var(--ink); -webkit-tap-highlight-color: transparent; }
+button, input { font-family: inherit; }
+button { cursor: pointer; }
+
+.app { position: relative; max-width: 480px; height: 100vh; height: 100dvh; margin: 0 auto; background: var(--ground); display: flex; flex-direction: column; overflow: hidden; }
+.top { flex: none; display: flex; justify-content: space-between; align-items: center; height: 56px; padding: 0 20px; padding-top: env(safe-area-inset-top); background: var(--white); border-bottom: 1px solid var(--line); }
+.top b { font-size: 17px; }
+.top span { font-size: 14px; color: var(--sub); }
+.scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; gap: 12px; padding: 16px 16px 24px; }
+.card { background: var(--white); border-radius: 2px; padding: 20px; display: flex; flex-direction: column; }
+.card h2 { margin: 0 0 8px; font-size: 16px; }
+.row { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-top: 1px solid var(--line); font-size: 15px; }
+.row .k { font-size: 14px; color: var(--sub); }
+.row .n { font-family: var(--num); font-size: 18px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.muted { color: var(--sub); }
+
+.hero { background: var(--ink); color: #fff; border-radius: 2px; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+.hero .meta { display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: rgba(255,255,255,.72); }
+.hero .state { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; color: #fff; }
+.hero .dot { width: 7px; height: 7px; border-radius: 50%; }
+.hero .clock { font-family: var(--num); font-size: 64px; font-weight: 600; letter-spacing: -2px; line-height: 1; font-variant-numeric: tabular-nums; }
+.hero hr { border: 0; height: 1px; background: rgba(255,255,255,.14); margin: 0; }
+.hero .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.hero .grid small { display: block; font-size: 12px; color: rgba(255,255,255,.64); margin-bottom: 4px; }
+.hero .grid strong { font-size: 15px; }
+
+.map { position: relative; height: 140px; background: #e9e6e3; border-radius: 2px; overflow: hidden; }
+.map i { position: absolute; background: #f7f6f4; }
+.map .range { position: absolute; top: 14px; width: 112px; height: 112px; margin-left: -56px; border-radius: 50%; border: 1.5px solid var(--ink); background: rgba(34,31,32,.06); }
+.map .label { position: absolute; top: 30px; transform: translateX(-50%); font-size: 12px; font-weight: 700; }
+.map .me { position: absolute; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; background: var(--ink); border: 3px solid #fff; }
+
+.primary { height: 58px; margin-top: 14px; border: 0; border-radius: 2px; background: var(--ink); color: #fff; font-size: 17px; font-weight: 700; }
+.primary:disabled { background: var(--line); color: var(--sub); cursor: default; }
+.ghost { height: 54px; border: 1px solid #d6d2cf; border-radius: 2px; background: #fff; color: var(--ink); font-size: 16px; font-weight: 500; }
+.link { border: 0; background: none; padding: 10px 0; font-size: 14px; color: var(--sub); }
+.wk-time { font-size: 16px; font-weight: 400; }
+.wk-toggle { width: 100%; border-left: 0; border-right: 0; border-bottom: 0; background: none; color: var(--ink); text-align: left; }
+.wk-right { display: flex; align-items: center; gap: 6px; }
+.chev { width: 18px; height: 18px; fill: none; stroke: var(--sub); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.chev.up { transform: rotate(180deg); }
+.wk-detail { padding: 0 0 10px; }
+.wk-line { display: flex; justify-content: space-between; align-items: center; padding: 6px 24px 6px 12px; background: var(--ground); }
+.notice { display: flex; flex-direction: column; gap: 3px; padding: 14px 0; border-top: 1px solid var(--line); }
+.notice b { font-size: 15px; font-weight: 500; }
+.notice span { font-size: 13px; color: var(--sub); }
+
+.tabs { flex: none; display: grid; grid-template-columns: repeat(3, 1fr); background: #fff; border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
+.tabs button { height: 66px; border: 0; border-top: 2px solid transparent; background: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 12px; color: var(--sub); }
+.tabs button[aria-current="page"] { color: var(--ink); font-weight: 700; border-top-color: var(--ink); }
+.tabs svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.cal-head { display: flex; justify-content: space-between; align-items: center; }
+.cal-head h2 { margin: 0; font-size: 17px; }
+.cal-head button { width: 44px; height: 44px; border: 0; background: none; display: flex; align-items: center; justify-content: center; color: var(--ink); }
+.cal-head button:disabled { color: #c9c5c2; cursor: default; }
+.cal-head svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.cal { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 4px; }
+.cal .wd { text-align: center; font-size: 12px; color: var(--sub); padding: 6px 0; }
+.cal .day { height: 50px; margin: 0 2px; border: 0; border-radius: 2px; background: none; color: var(--ink); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; font-family: var(--num); font-size: 16px; font-weight: 500; }
+.cal .day i { width: 5px; height: 5px; border-radius: 50%; }
+.cal .day.has i { background: var(--ink); }
+.cal .day.sel { background: var(--ink); color: #fff; font-weight: 600; }
+.cal .day.sel.has i { background: #fff; }
+
+.login { flex: 1; background: var(--ink); color: #fff; padding: 120px 24px 40px; padding-bottom: calc(40px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; justify-content: space-between; overflow-y: auto; }
+.login .brand { font-family: var(--num); font-size: 14px; font-weight: 500; letter-spacing: 2px; color: rgba(255,255,255,.72); }
+.login h1 { margin: 10px 0 8px; font-size: 30px; }
+.login p { margin: 0; font-size: 15px; color: rgba(255,255,255,.72); }
+.login form { display: flex; flex-direction: column; gap: 12px; margin-top: 48px; }
+.login label { font-size: 13px; color: rgba(255,255,255,.72); }
+.login input { height: 52px; border: 1px solid rgba(255,255,255,.24); border-radius: 2px; background: rgba(255,255,255,.06); color: #fff; padding: 0 14px; font-size: 16px; }
+.login button { margin-top: 20px; height: 56px; border: 0; border-radius: 2px; background: #fff; color: var(--ink); font-size: 17px; font-weight: 700; }
+
+.sheet-bg { position: absolute; inset: 0; background: rgba(34,31,32,.56); display: flex; align-items: flex-end; }
+.sheet { width: 100%; background: #fff; padding: 28px 20px 24px; padding-bottom: calc(24px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 6px; }
+.sheet h3 { margin: 0; font-size: 20px; }
+.sheet p { margin: 0; font-size: 15px; color: var(--sub); }
+.sheet .when { margin-top: 14px; padding: 16px; background: var(--ground); border-radius: 2px; display: flex; justify-content: space-between; align-items: center; }
+.sheet .when span { font-size: 14px; color: var(--sub); }
+.sheet .when b { font-family: var(--num); font-size: 24px; font-weight: 600; }
+.sheet .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
+.sheet .btns button { height: 56px; border-radius: 2px; font-size: 16px; }
+.sheet .btns .no { border: 1px solid #d6d2cf; background: #fff; color: var(--ink); font-weight: 500; }
+.sheet .btns .yes { border: 0; background: var(--ink); color: #fff; font-weight: 700; }
+
+.profile { flex-direction: row; align-items: center; gap: 16px; }
+.avatar { width: 56px; height: 56px; border-radius: 50%; background: var(--ink); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<script>
+(function () {
+  var WD = ['일', '월', '화', '수', '목', '금', '토'];
+  var ICON = {
+    home: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>',
+    records: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="16"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>',
+    me: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>',
+    prev: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>',
+    next: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>'
+  };
+  var NOTICES = [
+    { title: '[예시] 11월 근무표 안내', date: '11/01', writer: '경영지원' },
+    { title: '[예시] 동절기 출근 시간 변경', date: '10/30', writer: '경영지원' },
+    { title: '[예시] 출퇴근 기록 사용 안내', date: '10/28', writer: '경영지원' }
+  ];
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function hhmm() { var d = new Date(); return pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+  function load() { try { return JSON.parse(localStorage.getItem('leaders-attendance') || 'null'); } catch (e) { return null; } }
+  function save() { try { localStorage.setItem('leaders-attendance', JSON.stringify({ login: S.login, sessions: S.sessions })); } catch (e) {} }
+
+  var saved = load();
+  // 상태:
+  //   login    : true 면 로그인 화면
+  //   tab      : 'home' | 'records' | 'me'
+  //   sessions : 오늘 근무 구간 목록. 예) [{ in: '08:52', out: '12:01' }, { in: '13:05', out: null }]
+  //              out 이 null 이면 근무 중
+  //   confirm  : 퇴근 확인 시트가 열려 있는지
+  //   month, selDay : 기록 탭 캘린더에서 보고 있는 달과 고른 날
+  var S = {
+    login: saved ? saved.login : true,
+    tab: 'home',
+    sessions: saved ? saved.sessions : [],
+    confirm: false,
+    month: 11,
+    selDay: 2,
+    // 이번 주 기록에서 펼친 날짜. 예) { 30: true } 면 10/30 의 1차·2차가 보임
+    openDays: {}
+  };
+
+  function monthInfo(m) { return m === 10 ? { first: 4, days: 31 } : { first: 0, days: 30 }; }
+  function recordsFor(m, day) {
+    var wd = (monthInfo(m).first + day - 1) % 7;
+    if (m === 11) return day === 2 ? S.sessions : [];
+    if (wd === 0 || wd === 6 || day === 9) return [];
+    if (day === 30) return [{ in: '08:55', out: '12:00' }, { in: '13:10', out: '18:12' }];
+    return [{ in: '08:' + pad(44 + (day * 7) % 15), out: '18:' + pad((day * 5) % 21) }];
+  }
+  function isOpen() { var s = S.sessions; return s.length > 0 && s[s.length - 1].out === null; }
+  function span(r) { return r.in + ' – ' + (r.out || '근무 중'); }
+
+  function viewLogin() {
+    return '<div class="login"><div><div class="brand">LEADERS CC</div><h1>출퇴근</h1><p>ERP 계정으로 로그인</p></div>' +
+      '<form data-act="login"><label for="uid">아이디</label><input id="uid" autocomplete="username">' +
+      '<label for="upw" style="margin-top:8px">비밀번호</label><input id="upw" type="password" autocomplete="current-password">' +
+      '<button type="submit">로그인</button></form></div>';
+  }
+
+  function viewHome() {
+    var open = isOpen(), s = S.sessions;
+    var state = open ? '근무 중' : (s.length ? '퇴근함' : '출근 전');
+    var rows = s.length ? s.map(function (r, i) {
+      return '<div class="row"><span class="k">' + (i + 1) + '차</span><span class="n">' + span(r) + '</span></div>';
+    }).join('') : '<div class="row muted">아직 출근 기록이 없습니다.</div>';
+    var week = [30, 29, 28, 27, 26].map(function (d) {
+      var r = recordsFor(10, d);
+      var label = '10/' + d + ' (' + WD[(4 + d - 1) % 7] + ')';
+      var whole = r[0].in + ' – ' + r[r.length - 1].out;
+      if (r.length < 2) {
+        return '<div class="row"><span>' + label + '</span><span class="n wk-time">' + whole + '</span></div>';
+      }
+      var opened = !!S.openDays[d];
+      var detail = opened ? '<div class="wk-detail">' + r.map(function (x, i) {
+        return '<div class="wk-line"><span class="k">' + (i + 1) + '차</span><span class="n wk-time">' + span(x) + '</span></div>';
+      }).join('') + '</div>' : '';
+      return '<button class="row wk-toggle" data-act="wk" data-day="' + d + '" aria-expanded="' + opened + '">' +
+        '<span>' + label + '</span><span class="wk-right"><span class="n wk-time">' + whole + '</span>' +
+        '<svg class="chev' + (opened ? ' up' : '') + '" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span></button>' + detail;
+    }).join('');
+    return '<section class="hero"><div class="meta"><span>11월 2일 월요일</span><span class="state"><span class="dot" style="background:' + (open ? 'var(--red)' : 'rgba(255,255,255,.4)') + '"></span>' + state + '</span></div>' +
+      '<span class="clock" id="clock">' + hhmm() + '</span><hr>' +
+      '<div class="grid"><div><small>위치 권한</small><strong>켜짐</strong></div><div><small>현재 위치</small><strong>리더스CC 안</strong></div></div></section>' +
+      '<section class="map" role="img" aria-label="지도: 현재 위치가 리더스CC 범위 안에 있음">' +
+      '<i style="left:0;right:0;top:52px;height:8px"></i><i style="top:0;bottom:0;left:62%;width:8px"></i><i style="left:0;right:0;top:108px;height:5px"></i>' +
+      '<div class="range" style="left:50%"></div><span class="label" style="left:50%">리더스CC</span><div class="me" style="left:52%;top:74px"></div></section>' +
+      '<section class="card"><h2>오늘 근무</h2>' + rows + '<button class="primary" data-act="press">' + (open ? '퇴근' : '출근') + '</button></section>' +
+      '<section class="card" style="padding-bottom:6px"><h2>공지사항</h2>' + NOTICES.map(function (n) {
+        return '<div class="notice"><b>' + n.title + '</b><span>' + n.date + ' · ' + n.writer + '</span></div>';
+      }).join('') + '</section>' +
+      '<section class="card" style="padding-bottom:6px"><div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">이번 주 기록</h2><button class="link" data-act="tab" data-tab="records">전체 보기</button></div>' + week + '</section>';
+  }
+
+  function viewRecords() {
+    var m = S.month, info = monthInfo(m), cells = '';
+    WD.forEach(function (w) { cells += '<span class="wd">' + w + '</span>'; });
+    for (var i = 0; i < info.first; i++) cells += '<span></span>';
+    for (var d = 1; d <= info.days; d++) {
+      var has = recordsFor(m, d).length > 0, sel = d === S.selDay;
+      cells += '<button class="day' + (has ? ' has' : '') + (sel ? ' sel' : '') + '" data-act="day" data-day="' + d + '" aria-label="' + m + '월 ' + d + '일' + (has ? ', 기록 있음' : '') + '"><span>' + d + '</span><i></i></button>';
+    }
+    var recs = recordsFor(m, S.selDay);
+    var lines = recs.length ? recs.map(function (r, i) {
+      return '<div class="row"><span class="k">' + (i + 1) + '차</span><span class="n">' + span(r) + '</span></div>';
+    }).join('') : '<div class="row muted">기록 없음</div>';
+    return '<section class="card" style="padding:12px 12px 16px;gap:8px"><div class="cal-head">' +
+      '<button data-act="month" data-month="10" aria-label="이전 달"' + (m === 10 ? ' disabled' : '') + '>' + ICON.prev + '</button>' +
+      '<h2>2026년 ' + m + '월</h2>' +
+      '<button data-act="month" data-month="11" aria-label="다음 달"' + (m === 11 ? ' disabled' : '') + '>' + ICON.next + '</button></div>' +
+      '<div class="cal">' + cells + '</div></section>' +
+      '<section class="card" style="padding-bottom:6px"><h2>' + m + '월 ' + S.selDay + '일 (' + WD[(info.first + S.selDay - 1) % 7] + ')</h2>' + lines + '</section>';
+  }
+
+  function viewMe() {
+    return '<section class="card profile"><span class="avatar">홍</span><div><div style="font-size:18px;font-weight:700">홍길동</div><div class="muted" style="font-size:14px">프론트</div></div></section>' +
+      '<section class="card" style="padding:4px 20px"><div class="row" style="border:0"><span class="muted">ERP 아이디</span><span>hong.gildong</span></div></section>' +
+      '<button class="ghost" data-act="logout">로그아웃</button>';
+  }
+
+  function viewSheet() {
+    return '<div class="sheet-bg" data-act="cancel"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="leave" data-stop="1">' +
+      '<h3 id="leave">퇴근하시겠습니까?</h3><p>' + S.sessions.length + '차 근무를 마칩니다.</p>' +
+      '<div class="when"><span>퇴근 시각</span><b>' + hhmm() + '</b></div>' +
+      '<div class="btns"><button class="no" data-act="cancel">취소</button><button class="yes" data-act="leave">퇴근</button></div></div></div>';
+  }
+
+  function render() {
+    var el = document.getElementById('app');
+    if (S.login) { el.innerHTML = viewLogin(); return; }
+    var titles = { home: '리더스CC', records: '출퇴근 기록', me: '내 정보' };
+    var body = S.tab === 'home' ? viewHome() : S.tab === 'records' ? viewRecords() : viewMe();
+    var tabs = [['home', '홈'], ['records', '기록'], ['me', '내 정보']].map(function (t) {
+      return '<button data-act="tab" data-tab="' + t[0] + '"' + (S.tab === t[0] ? ' aria-current="page"' : '') + '>' + ICON[t[0]] + '<span>' + t[1] + '</span></button>';
+    }).join('');
+    el.innerHTML = '<header class="top"><b>' + titles[S.tab] + '</b><span>홍길동 · 프론트</span></header>' +
+      '<main class="scroll">' + body + '</main><nav class="tabs">' + tabs + '</nav>' + (S.confirm ? viewSheet() : '');
+  }
+
+  document.addEventListener('submit', function (e) {
+    if (e.target.getAttribute('data-act') === 'login') { e.preventDefault(); S.login = false; S.tab = 'home'; save(); render(); }
+  });
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-act]');
+    if (!t) return;
+    if (t.getAttribute('data-act') === 'cancel' && e.target.closest('[data-stop]') && !e.target.closest('.no')) return;
+    var act = t.getAttribute('data-act');
+    if (act === 'press') {
+      if (isOpen()) S.confirm = true;
+      else S.sessions = S.sessions.concat([{ in: hhmm(), out: null }]);
+    } else if (act === 'leave') {
+      var s = S.sessions.slice();
+      s[s.length - 1] = { in: s[s.length - 1].in, out: hhmm() };
+      S.sessions = s; S.confirm = false;
+    } else if (act === 'cancel') { S.confirm = false; }
+    else if (act === 'tab') { S.tab = t.getAttribute('data-tab'); }
+    else if (act === 'wk') { var wd = t.getAttribute('data-day'); S.openDays[wd] = !S.openDays[wd]; }
+    else if (act === 'day') { S.selDay = Number(t.getAttribute('data-day')); }
+    else if (act === 'month') { S.month = Number(t.getAttribute('data-month')); S.selDay = S.month === 10 ? 30 : 2; }
+    else if (act === 'logout') { S.login = true; }
+    else return;
+    save(); render();
+  });
+  setInterval(function () { var c = document.getElementById('clock'); if (c) c.textContent = hhmm(); }, 15000);
+  render();
+})();
+</script>
+</body>
+</html>
